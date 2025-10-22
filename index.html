@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Business Helper — Home</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section class="header-hero">
+    <div class="shape s1"></div>
+    <div class="shape s2"></div>
+
+    <div class="header-inner card">
+      <h1 class="title-large">Business Helper</h1>
+      <p class="subtitle">Your Startup Journey Starts Here — validate, build, and grow faster.</p>
+
+      <div class="header-cta" style="margin-top:18px">
+        <button class="btn btn-primary" id="signupBtn">Sign up</button>
+        <button class="btn btn-outline ghost" id="loginBtn">Login</button>
+      </div>
+
+      <div style="margin-top:16px" class="small">Demo uses localStorage for signup/login (no backend).</div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="grid" style="grid-template-columns:1fr;">
+      <div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;">
+        <div>
+          <strong>Already have an account?</strong>
+          <div class="small">Login to access your dashboard & saved ideas.</div>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="gotoLogin">Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup modal (simple) -->
+  <div id="modalRoot" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.5);align-items:center;justify-content:center;z-index:9999">
+    <div style="width:420px;max-width:92vw" class="card">
+      <h3 id="modalTitle">Sign up</h3>
+      <div style="margin-top:10px">
+        <input id="nameField" placeholder="Your name" />
+      </div>
+      <div style="margin-top:8px">
+        <input id="emailField" placeholder="Email" />
+      </div>
+      <div style="margin-top:8px">
+        <input id="passField" placeholder="Password" type="password" />
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline" id="cancelModal">Cancel</button>
+        <button class="btn btn-primary" id="confirmModal">Create account</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">Made with ♥ — Business Helper demo (localStorage)</footer>
+
+  <script>
+    // Simple modal and localStorage signup/login
+    const modalRoot = document.getElementById('modalRoot');
+    const signupBtn = document.getElementById('signupBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const gotoLogin = document.getElementById('gotoLogin');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmModal = document.getElementById('confirmModal');
+    const cancelModal = document.getElementById('cancelModal');
+    const nameField = document.getElementById('nameField');
+    const emailField = document.getElementById('emailField');
+    const passField = document.getElementById('passField');
+
+    let modalMode = 'signup'; // or 'login'
+
+    function openModal(mode){
+      modalMode = mode;
+      modalTitle.textContent = mode === 'signup' ? 'Create an account' : 'Login';
+      modalRoot.style.display = 'flex';
+      if(mode === 'login'){
+        nameField.style.display = 'none';
+      } else nameField.style.display = 'block';
+    }
+    function closeModal(){ modalRoot.style.display = 'none'; nameField.value=''; emailField.value=''; passField.value=''; }
+
+    signupBtn.addEventListener('click', ()=>openModal('signup'));
+    loginBtn.addEventListener('click', ()=>openModal('login'));
+    gotoLogin.addEventListener('click', ()=>openModal('login'));
+    cancelModal.addEventListener('click', closeModal);
+
+    confirmModal.addEventListener('click', ()=>{
+      const name = nameField.value.trim();
+      const email = emailField.value.trim();
+      const pass = passField.value;
+      if(modalMode === 'signup'){
+        if(!name || !email || !pass){ alert('Fill all fields'); return; }
+        // Create user in localStorage (simple demo, not secure)
+        const users = JSON.parse(localStorage.getItem('bh_users')||'[]');
+        if(users.find(u=>u.email===email)){ alert('Email exists, please login'); return; }
+        users.push({name,email,password:pass});
+        localStorage.setItem('bh_users', JSON.stringify(users));
+        alert('Account created! Logging you in...');
+        localStorage.setItem('bh_user', JSON.stringify({name,email}));
+        location.href = 'main.html';
+      } else {
+        if(!email||!pass){ alert('Fill email & password'); return; }
+        const users = JSON.parse(localStorage.getItem('bh_users')||'[]');
+        const found = users.find(u=>u.email===email && u.password===pass);
+        if(!found){ alert('Invalid credentials'); return; }
+        localStorage.setItem('bh_user', JSON.stringify({name:found.name,email:found.email}));
+        location.href = 'main.html';
+      }
+    });
+
+    // auto-redirect if already logged in
+    if(localStorage.getItem('bh_user')) {
+      // small delay for UX
+      setTimeout(()=>{ /* keep user on homepage unless they click; you can redirect instead */ }, 400);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Business Helper — Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div style="background:#fff;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.06)">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(90deg,#0b74ff,#6dd3ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">
+          BH
+        </div>
+        <div>
+          <div style="font-weight:700" id="welcomeName">Welcome</div>
+          <div class="small">Your dashboard</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button class="btn btn-outline" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <!-- Left -->
+      <aside class="card">
+        <div class="profile-card">
+          <div class="avatar" id="avatar">U</div>
+          <div id="userName" style="font-weight:700">User</div>
+          <div class="small">Member since demo</div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <div style="font-weight:700">Example Startup Ideas</div>
+          <div class="ideas-list" id="examples">
+            <!-- JS fills tiles -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center -->
+      <main class="card input-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h3 style="margin:0">Create your startup idea</h3>
+            <div class="small">Describe briefly — then visualize and explore.</div>
+          </div>
+          <div class="small chip">Demo • Local</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <input id="ideaTitle" type="text" placeholder="Idea title e.g. 'AI Tutor app'">
+        </div>
+        <div style="margin-top:10px">
+          <select id="sectorSelect">
+            <option>Technology</option><option>Education</option><option>Healthcare</option><option>Finance</option><option>Retail</option>
+          </select>
+        </div>
+        <div style="margin-top:10px">
+          <textarea id="ideaText" placeholder="Describe your idea (target users, revenue model, etc)"></textarea>
+        </div>
+
+        <div class="form-row">
+          <button class="btn btn-primary generate-btn" id="visualizeBtn">Create Visualization & Preview Idea</button>
+          <button class="btn btn-outline" id="goIdeaBtn">Go to Detailed Page</button>
+        </div>
+
+        <div style="margin-top:16px" id="previewArea" class="card">
+          <div style="display:flex;gap:12px;align-items:center">
+            <canvas id="vizCanvas" width="420" height="240" style="border-radius:8px"></canvas>
+            <div>
+              <div id="previewTitle" style="font-weight:700">Preview title</div>
+              <div id="previewDesc" class="small">Preview description</div>
+              <div style="margin-top:8px"><span class="chip" id="previewSector">Sector</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right -->
+      <aside class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Saved Ideas</div>
+          <div class="small">Local</div>
+        </div>
+        <div id="savedList" style="margin-top:10px"></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Chat popup -->
+  <div class="chat-popup" id="chatPopup" style="display:block">
+    <div class="chat-header">
+      <div style="display:flex;gap:10px;align-items:center">
+        <div style="width:40px;height:40;border-radius:8px;background:#fff;color:#0b1220;display:flex;align-items:center;justify-content:center;font-weight:700">AI</div>
+        <div>
+          <div style="font-weight:700">Business Assistant</div>
+          <div class="small">Tip: ask about MVP, marketing, funding</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="miniClose" class="btn btn-outline" style="padding:6px 8px">—</button>
+      </div>
+    </div>
+    <div class="chat-body" id="chatMessages">
+      <!-- messages -->
+    </div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="Ask the assistant..." />
+      <button id="sendChatBtn" class="btn btn-primary" style="margin-left:8px">Send</button>
+    </div>
+  </div>
+
+  <footer class="footer">Made with demo logic • Save and replace visuals as needed</footer>
+
+  <script>
+    // DEMO: localStorage user and simple logic
+    const user = JSON.parse(localStorage.getItem('bh_user')||'null');
+    if(!user){ alert('Not logged in — redirecting to home'); location.href='index.html'; }
+    document.getElementById('welcomeName').textContent = `Welcome, ${user.name || user.email}`;
+    document.getElementById('userName').textContent = user.name || user.email;
+    document.getElementById('avatar').textContent = (user.name||'U').charAt(0).toUpperCase();
+
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('bh_user'); location.href='index.html';
+    });
+
+    // example ideas
+    const examples = [
+      {title:'On-demand Tutor',sector:'Education',desc:'Connect students with tutors for 1:1 lessons'},
+      {title:'Neighborhood Grocery App',sector:'Retail',desc:'Local delivery marketplace for groceries'},
+      {title:'Healthcheck Teleclinic',sector:'Healthcare',desc:'Teleconsultation + booking system'}
+    ];
+    const examplesEl = document.getElementById('examples');
+    const colorMap = {'Education':'#6dd3ff','Retail':'#8a6dff','Healthcare':'#ff7b7b','Technology':'#6dffda','Finance':'#ffd26d'};
+
+    function renderExamples(){ examplesEl.innerHTML=''; examples.forEach((e,idx)=>{
+      const tile = document.createElement('div'); tile.className='idea-tile';
+      const thumb = document.createElement('div'); thumb.className='idea-thumb'; thumb.style.background = colorMap[e.sector] || '#6dd3ff'; thumb.textContent = e.title.split(' ')[0];
+      const info = document.createElement('div');
+      info.innerHTML = `<div class="idea-title">${e.title}</div><div class="idea-desc">${e.desc}</div>`;
+      tile.appendChild(thumb); tile.appendChild(info);
+      tile.addEventListener('click', ()=>{ loadExample(e); });
+      examplesEl.appendChild(tile);
+    }) }
+    renderExamples();
+
+    function loadExample(e){
+      document.getElementById('ideaTitle').value = e.title;
+      document.getElementById('sectorSelect').value = e.sector;
+      document.getElementById('ideaText').value = e.desc;
+      generateViz();
+    }
+
+    // visualization: draw on canvas
+    const canvas = document.getElementById('vizCanvas');
+    const ctx = canvas.getContext('2d');
+    function generateViz(){
+      const t = document.getElementById('ideaTitle').value || 'My Idea';
+      const s = document.getElementById('sectorSelect').value || 'Tech';
+      const d = document.getElementById('ideaText').value || 'Short description';
+      // background
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const g = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+      g.addColorStop(0, '#0b74ff'); g.addColorStop(1, '#6dd3ff');
+      ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+      // title block
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillRect(18,18,canvas.width-36,60);
+      ctx.fillStyle = '#0b1220'; ctx.font = 'bold 18px Inter, sans-serif'; ctx.fillText(t, 30, 54);
+      // sector chip
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(18,86,160,34); ctx.fillStyle = '#fff';
+      ctx.font = '600 13px Inter, sans-serif'; ctx.fillText(s, 30, 108);
+      // desc
+      ctx.font = '13px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      wrapText(ctx, d, 30, 140, canvas.width-60, 18);
+      // preview text update
+      document.getElementById('previewTitle').textContent = t;
+      document.getElementById('previewDesc').textContent = d;
+      document.getElementById('previewSector').textContent = s;
+    }
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+      const words = text.split(' '); let line=''; for(let n=0;n<words.length;n++){
+        const testLine = line + words[n] + ' '; const metrics = ctx.measureText(testLine);
+        if(metrics.width > maxWidth && n>0){ ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; }
+        else { line = testLine; }
+      } ctx.fillText(line, x, y);
+    }
+
+    document.getElementById('visualizeBtn').addEventListener('click', ()=>{
+      if(!document.getElementById('ideaTitle').value){ alert('Give a title'); return; }
+      generateViz();
+      // auto save to local 'preview' (not final submit)
+      const preview = {title:document.getElementById('ideaTitle').value, sector:document.getElementById('sectorSelect').value, desc:document.getElementById('ideaText').value, created:Date.now()};
+      localStorage.setItem('bh_preview', JSON.stringify(preview));
+    });
+
+    // go to idea page (submit)
+    document.getElementById('goIdeaBtn').addEventListener('click', ()=>{
+      const title = document.getElementById('ideaTitle').value.trim();
+      const desc = document.getElementById('ideaText').value.trim();
+      const sector = document.getElementById('sectorSelect').value;
+      if(!title || !desc){ alert('Fill title and description'); return; }
+      // save idea in storage
+      const ideas = JSON.parse(localStorage.getItem('bh_ideas')||'[]');
+      const id = 'idea_' + Date.now();
+      const data = {id,title,desc,sector,owner:JSON.parse(localStorage.getItem('bh_user')), created:Date.now()};
+      ideas.unshift(data); localStorage.setItem('bh_ideas', JSON.stringify(ideas));
+      // redirect to idea page with id param
+      location.href = 'idea.html?id=' + encodeURIComponent(id);
+    });
+
+    // saved ideas list
+    function renderSaved(){
+      const saved = JSON.parse(localStorage.getItem('bh_ideas')||'[]');
+      const out = document.getElementById('savedList'); out.innerHTML = '';
+      saved.slice(0,6).forEach(it=>{
+        const el = document.createElement('div'); el.className='idea-tile'; el.style.marginBottom = '8px';
+        el.innerHTML = `<div style="display:flex;gap:8px;align-items:center"><div style="width:48px;height:48px;border-radius:8px;background:${colorMap[it.sector]||'#6dd3ff'};display:flex;align-items:center;justify-content:center;color:#fff">${it.title.charAt(0)}</div><div><div style="font-weight:700">${it.title}</div><div class="small">${it.sector}</div></div></div>`;
+        el.addEventListener('click', ()=>{ location.href='idea.html?id=' + encodeURIComponent(it.id); });
+        out.appendChild(el);
+      });
+    }
+    renderSaved();
+
+    // Chat: rule-based but improved
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const miniClose = document.getElementById('miniClose');
+
+    function appendChat(text, who='bot'){
+      const d = document.createElement('div'); d.className = 'msg ' + (who==='user'?'user':'bot'); d.innerHTML = text;
+      chatMessages.appendChild(d); chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    appendChat('👋 Hi ' + (user.name||'') + '! Ask me about MVP, marketing, funding, or team.');
+
+    function getSmartReply(text){
+      const t = text.toLowerCase();
+      // combine context from preview idea if any
+      const preview = JSON.parse(localStorage.getItem('bh_preview')||'null');
+      if(/mvp|prototype|build|product/.test(t)) return 'MVP focus: build the smallest feature that proves value. Identify 1 core user job-to-be-done and ship in 4–8 weeks.';
+      if(/fund|investor|raise|seed/.test(t)) return 'To raise: prepare a 1-page summary, a 10-slide deck, and 3 months of traction metrics. Start with angels, pre-seed accelerators.';
+      if(/marketing|growth|acquire/.test(t)) return 'Run 3 low-cost channel experiments: content/SEO, partnerships/referrals, and paid ads. Measure CAC and LTV.';
+      if(/price|pricing/.test(t)) return 'Pricing approach: start value-based with 3 tiers; test with pilot customers and iterate.';
+      if(/team|hire/.test(t)) return 'Hire smart: outsource non-core tasks; early hires prefer equity+small salary.';
+      if(preview && t.includes('my idea')) return `Your preview (${preview.title}) suggests sector ${preview.sector}. Try running a short survey with 10 potential users to validate core assumptions.`;
+      return 'Tell me your biggest blocker (validation, build, or growth) and I will suggest the next 3 steps.';
+    }
+
+    sendChatBtn.addEventListener('click', ()=>{
+      const text = chatInput.value.trim(); if(!text) return;
+      appendChat(text,'user'); chatInput.value='';
+      setTimeout(()=>{ appendChat(getSmartReply(text),'bot'); }, 350);
+    });
+    chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ sendChatBtn.click(); } });
+
+    miniClose.addEventListener('click', ()=>{ const p = document.getElementById('chatPopup'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; });
+
+  </script>
+</body>
+</html>

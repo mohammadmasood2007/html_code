@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Business Helper — Idea Details</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="hero" class="hero-idea">
+    <div style="max-width:900px;text-align:center">
+      <h2 id="ideaTitleHero">Idea Title</h2>
+      <div id="ideaSectorChip" class="chip" style="margin-top:10px">Sector</div>
+      <div style="margin-top:12px;color:rgba(255,255,255,0.85)" id="ideaShort"></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card section">
+      <h3>Executive Summary</h3>
+      <div id="execSummary" class="small"></div>
+    </div>
+
+    <div class="card section">
+      <h3>Implementation Process</h3>
+      <ol id="implList"></ol>
+    </div>
+
+    <div class="card section" style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:280px">
+        <h3>Previous Success Rate</h3>
+        <div id="successRate" style="font-size:34px;font-weight:800;color:#0b74ff">--%</div>
+        <div class="small" id="successNote"></div>
+      </div>
+      <div style="flex:2;min-width:240px">
+        <h3>Visualizations</h3>
+        <canvas id="ideaCanvas" width="760" height="320" style="width:100%;border-radius:10px"></canvas>
+      </div>
+    </div>
+
+    <div class="card section">
+      <h3>Related Tips from the Assistant</h3>
+      <div id="tipsArea"></div>
+    </div>
+  </div>
+
+  <footer class="footer">Back to <a href="main.html">Dashboard</a></footer>
+
+  <script>
+    // read id param
+    function qs(name){ const url = new URL(location.href); return url.searchParams.get(name); }
+    const id = qs('id');
+    const ideas = JSON.parse(localStorage.getItem('bh_ideas')||'[]');
+    const idea = ideas.find(i=>i.id===id) || JSON.parse(localStorage.getItem('bh_preview')||'null');
+    if(!idea){ alert('Idea not found'); location.href='main.html'; }
+
+    // fill hero
+    document.getElementById('ideaTitleHero').textContent = idea.title;
+    document.getElementById('ideaSectorChip').textContent = idea.sector;
+    document.getElementById('ideaShort').textContent = idea.desc;
+
+    // executive summary (generated)
+    function generateExec(idea){
+      return `This idea (${idea.title}) targets ${idea.sector} users. Core proposition: ${idea.desc}. Key metric to measure early: user activation and retention.`;
+    }
+    document.getElementById('execSummary').textContent = generateExec(idea);
+
+    // implementation steps (detailed)
+    const impl = [
+      'Problem validation: interview 10–20 potential users, document pain points.',
+      'MVP: implement the single most important feature to demonstrate value to users.',
+      'Pilot: onboard 5–20 customers and measure activation, retention, and feedback.',
+      'Marketing: run 3 small experiments (content, partnerships, paid).',
+      'Operations: create SOPs for delivery, support and billing.',
+      'Scale: automate core flows and hire for customer success and growth.'
+    ];
+    const implList = document.getElementById('implList');
+    impl.forEach(s=>{ const li = document.createElement('li'); li.textContent = s; implList.appendChild(li); });
+
+    // previous success rate (fake model based on sector + keywords)
+    function estimateSuccess(idea){
+      let base = 35;
+      const s = idea.sector.toLowerCase();
+      if(s.includes('education')) base += 10;
+      if(s.includes('health')) base += 5;
+      if(s.includes('finance')) base -= 2;
+      const words = (idea.title + ' ' + idea.desc).toLowerCase();
+      if(words.includes('marketplace')) base -= 6;
+      if(words.includes('saas') || words.includes('platform')) base += 6;
+      base = Math.max(8, Math.min(84, base + Math.round(Math.random()*12-6)));
+      return base;
+    }
+    const rate = estimateSuccess(idea);
+    document.getElementById('successRate').textContent = rate + '%';
+    document.getElementById('successNote').textContent = `This is an illustrative estimate based on sector and keywords. Real outcomes vary.`;
+
+    // canvas visual
+    const c = document.getElementById('ideaCanvas'); const ctx = c.getContext('2d');
+    function drawIdea(){
+      ctx.clearRect(0,0,c.width,c.height);
+      // bg
+      const g = ctx.createLinearGradient(0,0,c.width,c.height); g.addColorStop(0,'#0b74ff'); g.addColorStop(1,'#6dd3ff');
+      ctx.fillStyle = g; ctx.fillRect(0,0,c.width,c.height);
+      // header card
+      ctx.fillStyle = 'rgba(255,255,255,0.96)'; ctx.fillRect(40,28,420,68);
+      ctx.fillStyle = '#0b1220'; ctx.font='bold 22px Inter, sans-serif'; ctx.fillText(idea.title, 52, 72);
+      // key stats
+      ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.font='600 16px Inter';
+      ctx.fillText(`Estimated success: ${rate}%`, 52, 116);
+      ctx.fillText(`Sector: ${idea.sector}`, 52, 140);
+      // flow boxes
+      const steps = ['Validate','MVP','Pilot','Growth','Scale'];
+      steps.forEach((s,i)=>{
+        const x = 520 + (i*44); const y = 60; ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(x,y,36,36); ctx.fillStyle='#fff'; ctx.font='600 11px Inter'; ctx.fillText(s.charAt(0), x+12, y+22);
+      });
+    }
+    drawIdea();
+
+    // tips
+    const tips = [
+      'Focus on one clear value you deliver to users.',
+      'Measure three metrics: activation, retention, and conversion.',
+      'Start with manual processes to learn before automating.'
+    ];
+    const tipsArea = document.getElementById('tipsArea'); tips.forEach(t=>{ const d=document.createElement('div'); d.textContent = '• ' + t; d.style.marginBottom='8px'; tipsArea.appendChild(d); });
+
+  </script>
+</body>
+</html>
